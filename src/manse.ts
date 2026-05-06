@@ -248,7 +248,7 @@ function getDateTimePartsInTimeZone(date: Date, timeZone: string) {
     year: values.year,
     month: values.month,
     day: values.day,
-    hour: values.hour,
+    hour: values.hour === 24 ? 0 : values.hour,
     minute: values.minute,
     second: values.second,
   };
