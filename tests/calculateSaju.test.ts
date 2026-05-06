@@ -143,6 +143,51 @@ test("lunar input should match equivalent solar input", () => {
   assertEquals(lunarResult.pillars, solarResult.pillars, "lunar/solar pillars should match");
 });
 
+test("solarToLunar should handle lunar year and month boundary dates", () => {
+  const cases = [
+    { solar: [1960, 1, 28], lunar: { year: 1960, month: 1, day: 1, isLeapMonth: false } },
+    { solar: [1960, 2, 27], lunar: { year: 1960, month: 2, day: 1, isLeapMonth: false } },
+    { solar: [1960, 8, 22], lunar: { year: 1960, month: 7, day: 1, isLeapMonth: false } },
+    { solar: [1961, 2, 15], lunar: { year: 1961, month: 1, day: 1, isLeapMonth: false } },
+    { solar: [1962, 2, 5], lunar: { year: 1962, month: 1, day: 1, isLeapMonth: false } },
+  ] as const;
+
+  for (const { solar, lunar } of cases) {
+    assertEquals(
+      solarToLunar(solar[0], solar[1], solar[2]),
+      lunar,
+      `solarToLunar should convert ${solar.join("-")} on a lunar boundary`,
+    );
+    assertEquals(
+      lunarToSolar(lunar.year, lunar.month, lunar.day, lunar.isLeapMonth),
+      { year: solar[0], month: solar[1], day: solar[2] },
+      `lunarToSolar should round-trip ${solar.join("-")} on a lunar boundary`,
+    );
+  }
+});
+
+test("solarToLunar should handle the 1960 leap sixth-month boundaries", () => {
+  const cases = [
+    { solar: { year: 1960, month: 7, day: 23 }, lunar: { year: 1960, month: 6, day: 30, isLeapMonth: false } },
+    { solar: { year: 1960, month: 7, day: 24 }, lunar: { year: 1960, month: 6, day: 1, isLeapMonth: true } },
+    { solar: { year: 1960, month: 8, day: 21 }, lunar: { year: 1960, month: 6, day: 29, isLeapMonth: true } },
+    { solar: { year: 1960, month: 8, day: 22 }, lunar: { year: 1960, month: 7, day: 1, isLeapMonth: false } },
+  ] as const;
+
+  for (const { solar, lunar } of cases) {
+    assertEquals(
+      solarToLunar(solar.year, solar.month, solar.day),
+      lunar,
+      `solarToLunar should convert ${solar.year}-${solar.month}-${solar.day} around the leap sixth month`,
+    );
+    assertEquals(
+      lunarToSolar(lunar.year, lunar.month, lunar.day, lunar.isLeapMonth),
+      solar,
+      `lunarToSolar should round-trip ${solar.year}-${solar.month}-${solar.day} around the leap sixth month`,
+    );
+  }
+});
+
 test("currentAge should use exact international age by KST date", () => {
   const result1998 = calculateSaju({
     year: 1998,
