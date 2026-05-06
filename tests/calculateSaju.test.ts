@@ -15,6 +15,17 @@ function assertEquals<T>(actual: T, expected: T, message: string) {
   }
 }
 
+function assertThrows(fn: () => unknown, message: string) {
+  let threw = false;
+  try {
+    fn();
+  } catch {
+    threw = true;
+  }
+
+  assert(threw, message);
+}
+
 const EARTHLY_BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"] as const;
 const BONG_STAGE_SEQUENCE = ["장생", "목욕", "관대", "건록", "제왕", "쇠", "병", "사", "묘", "절", "태", "양"] as const;
 const BONG_STAGE_START_BRANCH = {
@@ -184,6 +195,71 @@ test("solarToLunar should handle the 1960 leap sixth-month boundaries", () => {
       lunarToSolar(lunar.year, lunar.month, lunar.day, lunar.isLeapMonth),
       solar,
       `lunarToSolar should round-trip ${solar.year}-${solar.month}-${solar.day} around the leap sixth month`,
+    );
+  }
+});
+
+test("solarToLunar should match KASI month-size regression dates", () => {
+  const cases = [
+    { solar: { year: 1950, month: 3, day: 18 }, lunar: { year: 1950, month: 1, day: 30, isLeapMonth: false } },
+    { solar: { year: 1950, month: 6, day: 15 }, lunar: { year: 1950, month: 4, day: 30, isLeapMonth: false } },
+    { solar: { year: 1988, month: 2, day: 17 }, lunar: { year: 1987, month: 12, day: 30, isLeapMonth: false } },
+    { solar: { year: 2020, month: 6, day: 6 }, lunar: { year: 2020, month: 4, day: 15, isLeapMonth: true } },
+  ] as const;
+
+  for (const { solar, lunar } of cases) {
+    assertEquals(
+      solarToLunar(solar.year, solar.month, solar.day),
+      lunar,
+      `solarToLunar should match KASI for ${solar.year}-${solar.month}-${solar.day}`,
+    );
+  }
+});
+
+test("lunarToSolar should match KASI month-size regression dates", () => {
+  const cases = [
+    { lunar: { year: 1950, month: 1, day: 30, isLeapMonth: false }, solar: { year: 1950, month: 3, day: 18 } },
+    { lunar: { year: 1950, month: 4, day: 30, isLeapMonth: false }, solar: { year: 1950, month: 6, day: 15 } },
+    { lunar: { year: 1987, month: 12, day: 30, isLeapMonth: false }, solar: { year: 1988, month: 2, day: 17 } },
+    { lunar: { year: 2020, month: 4, day: 15, isLeapMonth: true }, solar: { year: 2020, month: 6, day: 6 } },
+  ] as const;
+
+  for (const { lunar, solar } of cases) {
+    assertEquals(
+      lunarToSolar(lunar.year, lunar.month, lunar.day, lunar.isLeapMonth),
+      solar,
+      `lunarToSolar should match KASI for ${lunar.year}-${lunar.month}-${lunar.day}${
+        lunar.isLeapMonth ? " leap" : ""
+      }`,
+    );
+  }
+});
+
+test("lunarToSolar should enforce KASI-corrected lunar month sizes", () => {
+  const validThirtyDayMonths = [
+    { year: 1950, month: 1, isLeapMonth: false },
+    { year: 1987, month: 12, isLeapMonth: false },
+    { year: 2012, month: 3, isLeapMonth: true },
+    { year: 2020, month: 1, isLeapMonth: false },
+    { year: 2023, month: 3, isLeapMonth: false },
+  ] as const;
+
+  const twentyNineDayMonths = [
+    { year: 1950, month: 2, isLeapMonth: false },
+    { year: 1988, month: 1, isLeapMonth: false },
+    { year: 2020, month: 2, isLeapMonth: false },
+    { year: 2023, month: 4, isLeapMonth: false },
+  ] as const;
+
+  for (const lunar of validThirtyDayMonths) {
+    lunarToSolar(lunar.year, lunar.month, 30, lunar.isLeapMonth);
+  }
+
+  for (const lunar of twentyNineDayMonths) {
+    lunarToSolar(lunar.year, lunar.month, 29, lunar.isLeapMonth);
+    assertThrows(
+      () => lunarToSolar(lunar.year, lunar.month, 30, lunar.isLeapMonth),
+      `lunarToSolar should reject KASI-invalid day 30 for ${lunar.year}-${lunar.month}`,
     );
   }
 });
