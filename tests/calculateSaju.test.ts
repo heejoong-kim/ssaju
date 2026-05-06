@@ -281,6 +281,12 @@ test("hour boundary: 23:30 and 00:00 are 자시, 01:00 is 축시", () => {
   });
 
   assert(at2330.pillars.hour === "甲子", "23:30 should be 甲子 hour pillar");
+  assert(at0000.pillars.day === "甲子", "00:00 should keep 2024-01-01 day pillar");
+  assertEquals(
+    at0000.normalized.calculation,
+    { year: 2024, month: 1, day: 1, hour: 0, minute: 0 },
+    "00:00 should normalize to same local date midnight",
+  );
   assert(at0000.pillars.hour === "甲子", "00:00 should be 甲子 hour pillar");
   assert(at0100.pillars.hour === "乙丑", "01:00 should be 乙丑 hour pillar");
 });
