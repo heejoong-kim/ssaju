@@ -399,44 +399,43 @@ export function solarToLunar(year: number, month: number, day: number): {
   let lunarYear = 1900;
   let remainingDays = offset;
 
-  for (let i = 1900; i < 2100 && remainingDays > 0; i++) {
-    const yearDays = getLunarYearDays(i);
+  for (; lunarYear < 2100; lunarYear++) {
+    const yearDays = getLunarYearDays(lunarYear);
     if (remainingDays < yearDays) {
-      lunarYear = i;
       break;
     }
     remainingDays -= yearDays;
   }
 
   const leapMonth = getLeapMonth(lunarYear);
-  let lunarMonth = 1;
-  let isLeapMonth = false;
 
-  for (let i = 1; i <= 12 && remainingDays > 0; i++) {
-    let monthDays: number;
-
-    if (leapMonth > 0 && i === leapMonth + 1 && !isLeapMonth) {
-      monthDays = getLeapMonthDays(lunarYear);
-      isLeapMonth = true;
-      i--;
-    } else {
-      monthDays = getLunarMonthDays(lunarYear, i);
-      isLeapMonth = false;
-    }
-
+  for (let lunarMonth = 1; lunarMonth <= 12; lunarMonth++) {
+    const monthDays = getLunarMonthDays(lunarYear, lunarMonth);
     if (remainingDays < monthDays) {
-      lunarMonth = i;
-      break;
+      return {
+        year: lunarYear,
+        month: lunarMonth,
+        day: remainingDays + 1,
+        isLeapMonth: false,
+      };
     }
     remainingDays -= monthDays;
+
+    if (leapMonth === lunarMonth) {
+      const leapMonthDays = getLeapMonthDays(lunarYear);
+      if (remainingDays < leapMonthDays) {
+        return {
+          year: lunarYear,
+          month: lunarMonth,
+          day: remainingDays + 1,
+          isLeapMonth: true,
+        };
+      }
+      remainingDays -= leapMonthDays;
+    }
   }
 
-  return {
-    year: lunarYear,
-    month: lunarMonth,
-    day: remainingDays + 1,
-    isLeapMonth,
-  };
+  throw new Error("failed to convert solar date to lunar date");
 }
 
 // =============================
